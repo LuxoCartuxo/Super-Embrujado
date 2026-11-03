@@ -9,9 +9,11 @@ public class PlayerInteraction : MonoBehaviour
 
     [Header("ELEMENTOS DE UI")]
     public GameObject interactionPanel;
+    public GameObject dialoguePanel;
+    public TextMeshProUGUI dialogueText;
     public TextMeshProUGUI nameText;
+    public TextMeshProUGUI productNameText;
     public TextMeshProUGUI priceText;
-    public TextMeshProUGUI categoryText;
     #endregion
 
     #region SETTINGS
@@ -75,9 +77,8 @@ public class PlayerInteraction : MonoBehaviour
     private void ShowUI(ItemScriptable data)
     {
         if (interactionPanel != null) interactionPanel.SetActive(true);
-        if (nameText != null) nameText.text = data.itemName;
+        if (productNameText != null) nameText.text = data.itemName;
         if (priceText != null) priceText.text = $"${data.itemPrice:F0}";
-        if (categoryText != null) categoryText.text = $"Cat: {data.category}";
     }
 
     private void ClearHover()
