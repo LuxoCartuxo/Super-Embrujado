@@ -7,19 +7,17 @@ public class PlayerInteraction : MonoBehaviour
     [Header("PUNTO DE AGARRE")]
     public Transform holdPoint;
 
-    [Header("ELEMENTOS DE UI")]
+    [Header("ELEMENTOS DE UI INTERACCIÓN DE PRODUCTO")]
     public GameObject interactionPanel;
-    public GameObject dialoguePanel;
-    public TextMeshProUGUI dialogueText;
-    public TextMeshProUGUI nameText;
     public TextMeshProUGUI productNameText;
     public TextMeshProUGUI priceText;
+    public TextMeshProUGUI categoryText;
     #endregion
 
     #region SETTINGS
     [Header("CONFIGURACIÓN DE RAYCAST")]
     public float rayDistance = 4f;
-    public LayerMask itemLayer;
+    public LayerMask interactableLayer;
     public KeyCode interactKey = KeyCode.E;
     #endregion
 
@@ -27,6 +25,7 @@ public class PlayerInteraction : MonoBehaviour
     private Transform cameraTransform;
     private WorldItem currentHeldItem;
     private WorldItem hoveredItem;
+    private NPCInteractable hoveredNPC;
     #endregion
 
     private void Awake()
@@ -39,9 +38,18 @@ public class PlayerInteraction : MonoBehaviour
 
     private void Update()
     {
+        if (DialogueManager.Instance != null && DialogueManager.Instance.IsTalking())
+        {
+            if (Input.GetKeyDown(interactKey))
+            {
+                DialogueManager.Instance.AdvanceDialogue();
+            }
+            return;
+        }
+
         if (currentHeldItem == null)
         {
-            DetectItemWithRaycast();
+            DetectWithRaycast();
         }
 
         if (Input.GetKeyDown(interactKey))
@@ -54,36 +62,61 @@ public class PlayerInteraction : MonoBehaviour
             {
                 PickupHoveredItem();
             }
+            else if (hoveredNPC != null)
+            {
+                hoveredNPC.Interact();
+                ClearHover();
+            }
         }
     }
 
-    private void DetectItemWithRaycast()
+    private void DetectWithRaycast()
     {
-        if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, rayDistance, itemLayer))
+        if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, rayDistance, interactableLayer))
         {
             WorldItem detectedItem = hit.transform.GetComponent<WorldItem>();
-
             if (detectedItem != null && detectedItem.itemData != null)
             {
                 hoveredItem = detectedItem;
-                ShowUI(detectedItem.itemData);
+                hoveredNPC = null;
+                ShowItemUI(detectedItem.itemData);
                 return;
             }
+
+            NPCInteractable detectedNPC = hit.transform.GetComponent<NPCInteractable>();
+            if (detectedNPC != null)
+            {
+                hoveredNPC = detectedNPC;
+                hoveredItem = null;
+                if (interactionPanel != null) interactionPanel.SetActive(false);
+                return;
+            }
+        }
+        CheckoutRegister checkout = hit.transform.GetComponent<CheckoutRegister>();
+        if (checkout != null)
+        {
+            if (Input.GetKeyDown(interactKey))
+            {
+                checkout.ProcessCheckout();
+            }
+            return;
         }
 
         ClearHover();
     }
 
-    private void ShowUI(ItemScriptable data)
+    private void ShowItemUI(ItemScriptable data)
     {
         if (interactionPanel != null) interactionPanel.SetActive(true);
-        if (productNameText != null) nameText.text = data.itemName;
+        if (productNameText != null) productNameText.text = data.itemName;
         if (priceText != null) priceText.text = $"${data.itemPrice:F0}";
+        if (categoryText != null) categoryText.text = $"Cat: {data.category}";
     }
 
     private void ClearHover()
     {
         hoveredItem = null;
+        hoveredNPC = null;
         if (interactionPanel != null) interactionPanel.SetActive(false);
     }
 

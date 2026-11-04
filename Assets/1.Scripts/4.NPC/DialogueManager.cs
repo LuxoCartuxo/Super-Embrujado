@@ -3,58 +3,87 @@ using UnityEngine;
 
 public class DialogueManager : MonoBehaviour
 {
+    #region SINGLETON
+    public static DialogueManager Instance;
+    #endregion
+
     #region REFERENCES
-    public ConversationScriptable currentConversation;
-    public TextMeshProUGUI nameText, phraseText;
+    [Header("PANEL Y TEXTOS DE UI")]
+    public GameObject dialoguePanel;
+    public TextMeshProUGUI nameText;
+    public TextMeshProUGUI phraseText;
     #endregion
 
     #region PRIVATE VARIABLES
+    private ConversationScriptable currentConversation;
     private int currentDialogueIndex;
     private bool isTalking;
     #endregion
+
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+    }
 
     private void Start()
     {
         ClearUI();
     }
 
-    private void Update()
+    public void StartConversation(ConversationScriptable conversation)
     {
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            Talk();
-        }
-    }
-    private void ClearUI()
-    {
-        nameText.text = null;
-        phraseText.text = null;
+        if (conversation == null || conversation.dialogueArray.Length == 0) return;
+
+        currentConversation = conversation;
         currentDialogueIndex = 0;
+        isTalking = true;
+
+        if (dialoguePanel != null) dialoguePanel.SetActive(true);
+        RefreshDialogueUI();
     }
-    private void Talk()
+
+    public void AdvanceDialogue()
     {
-        if (isTalking)
+        if (!isTalking || currentConversation == null) return;
+
+        if (currentDialogueIndex < currentConversation.dialogueArray.Length - 1)
         {
-            if (currentDialogueIndex < currentConversation.dialogueArray.Length - 1)
-            {
-                currentDialogueIndex++;
-                RefreshDialogueUI();
-            }
-            else
-            {
-                ClearUI();
-                isTalking = false;
-            }
+            currentDialogueIndex++;
+            RefreshDialogueUI();
         }
         else
         {
-            RefreshDialogueUI();
-            isTalking = true;
+            EndConversation();
         }
     }
+
+    public void EndConversation()
+    {
+        ClearUI();
+        isTalking = false;
+        currentConversation = null;
+        if (dialoguePanel != null) dialoguePanel.SetActive(false);
+    }
+
+    private void ClearUI()
+    {
+        if (nameText != null) nameText.text = "";
+        if (phraseText != null) phraseText.text = "";
+        currentDialogueIndex = 0;
+    }
+
     private void RefreshDialogueUI()
     {
-        nameText.text = currentConversation.dialogueArray[currentDialogueIndex].characterName;
-        phraseText.text = currentConversation.dialogueArray[currentDialogueIndex].phrase;
+        if (currentConversation != null && currentDialogueIndex < currentConversation.dialogueArray.Length)
+        {
+            nameText.text = currentConversation.dialogueArray[currentDialogueIndex].characterName;
+            phraseText.text = currentConversation.dialogueArray[currentDialogueIndex].phrase;
+        }
+    }
+
+    public bool IsTalking()
+    {
+        return isTalking;
     }
 }
